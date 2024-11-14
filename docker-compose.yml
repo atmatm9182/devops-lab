@@ -1,0 +1,19 @@
+version: '3'
+services:
+  httppo:
+    build: ./httppo
+    container_name: httppo
+    ports:
+      - "8080:8080"
+    networks:
+      - my-network
+  kokos:
+    build: ./kokos
+    container_name: kokos
+    depends_on:
+      - httppo
+    networks:
+      - my-network
+
+networks:
+  my-network:
