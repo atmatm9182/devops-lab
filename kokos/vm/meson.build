@@ -11,6 +11,7 @@ vm_sources = [
   'src/value.c',
   'src/string-store.c',
   'src/scope.c',
+  'src/env.c',
 ]
 
 kokosvm_cargs = ['-Wno-unused-value', '-DBASE_IMPLEMENTATION', '-DBASE_STATIC']
@@ -19,8 +20,11 @@ if get_option('buildtype') == 'debug'
   kokosvm_cargs += '-DKOKOS_DEBUG_BUILD'
 endif
 
+curldep = dependency('libcurl')
+
 executable('kokosvm',
   vm_sources,
   include_directories : [lexerinc, baseinc],
   link_with : [lexerlib],
+  dependencies : curldep,
   c_args: kokosvm_cargs)

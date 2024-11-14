@@ -95,6 +95,36 @@ kokos_runtime_string_t* kokos_runtime_string_new(char const* data, size_t len)
     kokos_runtime_string_t* string = KOKOS_ALLOC(sizeof(kokos_runtime_string_t));
     string->ptr = KOKOS_CALLOC(len + 1, sizeof(char));
     string->len = len;
+    string->ptr[string->len] = '\0';
     memcpy(string->ptr, data, string->len);
     return string;
+}
+
+inline kokos_runtime_string_t* kokos_runtime_string_from_sv(string_view sv)
+{
+    return kokos_runtime_string_new(sv.ptr, sv.size);
+}
+
+void kokos_runtime_string_destroy(kokos_runtime_string_t* string)
+{
+    KOKOS_FREE(string->ptr);
+    KOKOS_FREE(string);
+}
+
+size_t kokos_runtime_proc_locals_count(kokos_runtime_proc_t const* proc)
+{
+    switch (proc->type) {
+    case PROC_NATIVE: return 0;
+    case PROC_KOKOS:  return proc->kokos.params.len;
+    default:          KOKOS_TODO();
+    }
+}
+
+void kokos_runtime_proc_destroy(kokos_runtime_proc_t* proc)
+{
+    if (proc->type != PROC_KOKOS) {
+        return;
+    }
+
+    KOKOS_FREE(proc->kokos.params.names);
 }

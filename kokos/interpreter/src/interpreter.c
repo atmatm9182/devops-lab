@@ -5,15 +5,12 @@
 #include "src/obj.h"
 #include "src/util.h"
 
-#include <assert.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#include <curl/curl.h>
 
 #define ERR_BUFFER_CAP 2048
 #define DEFAULT_MAP_CAPACITY 11
@@ -972,45 +969,6 @@ static kokos_obj_t* builtin_macroexpand_1(
     return call_macro(interp, macro, macro_args);
 }
 
-static size_t _curl_write_func(void* ptr, size_t size, size_t nmemb, char* data)
-{
-	memcpy(data, ptr, size * nmemb);
-	return size * nmemb;
-}
-
-static kokos_obj_t* builtin_http_get(
-    kokos_interp_t* interp, kokos_obj_list_t args, kokos_location_t called_from)
-{
-	if (!expect_arity(called_from, 1, args.len, P_EQUAL)) {
-		return NULL;
-	}
-
-	if (!expect_type(args.objs[0], 1, OBJ_STRING)) {
-		return NULL;
-	}
-
-	char* url = args.objs[0]->string;
-
-	CURL* curl = curl_easy_init();
-	assert(curl);
-
-	curl_easy_setopt(curl, CURLOPT_URL, url);
-
-	char* data = calloc(512000, 1); 
-	kokos_obj_t* result = kokos_gc_alloc(&interp->gc);
-	result->type = OBJ_STRING;
-
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, data);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _curl_write_func);
-
-	CURLcode code = curl_easy_perform(curl);
-	assert(code == CURLE_OK);
-
-	result->string = data;
-
-	return result;
-}
-
 static kokos_obj_t* sform_def(
     kokos_interp_t* interp, kokos_obj_list_t args, kokos_location_t called_from)
 {
@@ -1313,9 +1271,6 @@ static kokos_env_t default_env(kokos_interp_t* interp)
     kokos_obj_t* macroexpand_1 = make_builtin(interp, builtin_macroexpand_1);
     kokos_env_add(&env, "macroexpand-1", macroexpand_1);
 
-    kokos_obj_t* http_get = make_builtin(interp, builtin_http_get);
-    kokos_env_add(&env, "http-get", http_get);
-
     // special forms
     kokos_obj_t* def = make_special_form(interp, sform_def);
     kokos_env_add(&env, "def", def);
@@ -1338,7 +1293,7 @@ static kokos_env_t default_env(kokos_interp_t* interp)
     kokos_obj_t* or = make_special_form(interp, sform_or);
     kokos_env_add(&env, "or", or);
 
-    kokos_obj_t*and = make_special_form(interp, sform_and);
+    kokos_obj_t* and = make_special_form(interp, sform_and);
     kokos_env_add(&env, "and", and);
 
     return env;

@@ -3,6 +3,7 @@
 #include "instruction.h"
 #include "lexer.h"
 #include "parser.h"
+#include "src/runtime.h"
 #include "vm.h"
 
 #include <stdio.h>
@@ -20,7 +21,7 @@ char* read_file(char const* filename)
     long fsize = ftell(f);
     rewind(f);
 
-    char* data = KOKOS_ALLOC(sizeof(char) * (fsize + 1));
+    char* data = KOKOS_CALLOC(sizeof(char), fsize + 1);
     fread(data, sizeof(char), fsize, f);
     data[fsize] = '\0';
 
@@ -57,7 +58,7 @@ static int run_file(char const* filename)
     kokos_module_dump(module);
     printf("--------------------------------------------------\n\n");
 
-    kokos_scope_t* global_scope = kokos_scope_global();
+    kokos_scope_t* global_scope = kokos_scope_root();
     kokos_compiled_module_t compiled_module;
 
     uint64_t compile_start = get_time_stamp();
@@ -77,7 +78,20 @@ static int run_file(char const* filename)
 
     printf("procedure code:\n");
     printf("--------------------------------------------------\n");
-    kokos_code_dump(*global_scope->proc_code);
+    HT_ITER(compiled_module.procs, {
+        kokos_runtime_proc_t* proc = GET_PROC_PTR(kv.value);
+
+        if (proc->type == PROC_NATIVE) {
+            continue;
+        }
+
+        kokos_runtime_string_t* name = GET_STRING_PTR(kv.key);
+        printf(RT_STRING_FMT ":\n", RT_STRING_ARG(*name));
+
+        KOKOS_ASSERT(proc->type == PROC_KOKOS);
+
+        kokos_code_dump(proc->kokos.code);
+    });
     printf("--------------------------------------------------\n\n");
 
     kokos_vm_t* vm = kokos_vm_create(global_scope);
@@ -94,6 +108,11 @@ static int run_file(char const* filename)
     printf("parsing took %ld us\n", parser_end - parser_start);
     printf("compiling took %ld us\n", compile_end - compile_start);
     printf("runtime took %ld us\n", runtime_end - runtime_start);
+
+    KOKOS_FREE(data);
+    kokos_module_destroy(module);
+    kokos_scope_destroy(global_scope);
+    kokos_vm_destroy(vm);
 
     return 0;
 }

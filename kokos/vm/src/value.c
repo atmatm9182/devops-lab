@@ -91,9 +91,14 @@ void kokos_value_print(kokos_value_t value)
     case PROC_TAG: {
         kokos_runtime_proc_t* proc = GET_PTR(value);
         switch (proc->type) {
-        case PROC_KOKOS:  printf("<kokos proc at ip %lu>", proc->kokos.label); break;
+        case PROC_KOKOS:  printf("<kokos proc>"); break;
         case PROC_NATIVE: printf("<native proc at address %p>", proc->native); break;
         }
+        break;
+    }
+    case SYM_TAG: {
+        kokos_runtime_sym_t* sym = GET_SYM(value);
+        printf(RT_STRING_FMT, RT_STRING_ARG(*sym));
         break;
     }
     default: {

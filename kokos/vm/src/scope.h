@@ -3,8 +3,8 @@
 
 #include "base.h"
 #include "instruction.h"
-#include "macro.h"
 #include "string-store.h"
+#include "macro.h"
 
 typedef struct {
     string_view* items;
@@ -12,29 +12,30 @@ typedef struct {
     size_t cap;
 } kokos_variable_list_t;
 
-typedef struct scope {
-    // root vars
-    kokos_string_store_t* string_store;
-    kokos_code_t* proc_code;
-    kokos_code_t* top_level_code;
-    hash_table* call_locations;
-    kokos_vm_t* macro_vm;
+struct scope;
 
-    // individual vars
+typedef struct {
+    struct scope** items;
+    size_t len;
+    size_t cap;
+} kokos_scope_list_t;
+
+typedef struct scope {
+    kokos_string_store_t* string_store;
+    kokos_code_t code;
+    hash_table call_locations;
     hash_table procs;
     hash_table macros;
-    kokos_variable_list_t vars;
-    kokos_code_t* current_code;
+    kokos_vm_t* macro_vm;
+    kokos_scope_list_t derived;
 
     struct scope* parent;
 } kokos_scope_t;
 
-kokos_scope_t* kokos_scope_empty(kokos_scope_t* parent, bool top_level);
-kokos_scope_t* kokos_scope_global(void);
+kokos_scope_t* kokos_scope_derived(kokos_scope_t* parent);
+kokos_scope_t* kokos_scope_root(void);
+void kokos_scope_destroy(kokos_scope_t*);
 
-void kokos_scope_add_proc(kokos_scope_t* scope, string_view name, kokos_runtime_proc_t* proc);
-void kokos_scope_add_macro(kokos_scope_t* scope, string_view name, kokos_macro_t* macro);
-kokos_runtime_proc_t* kokos_scope_get_proc(kokos_scope_t* scope, string_view name);
 kokos_macro_t* kokos_scope_get_macro(kokos_scope_t* scope, string_view name);
 
 void kokos_scope_dump(kokos_scope_t const* scope);

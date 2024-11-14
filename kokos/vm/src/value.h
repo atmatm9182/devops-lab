@@ -20,16 +20,17 @@ typedef union {
 _Static_assert(sizeof(kokos_value_t) == sizeof(uintptr_t),
     "kokos_value_t shoud have the size of platform's pointer");
 
-#define ENUMERATE_HEAP_TYPES                                                                       \
-    X(STRING)                                                                                      \
-    X(VECTOR)                                                                                      \
-    X(LIST)                                                                                        \
-    X(MAP)
+#define ENUMERATE_HEAP_TYPES   \
+    X(STRING)                  \
+    X(VECTOR)                  \
+    X(LIST)                    \
+    X(MAP)                     \
+    X(PROC)                    \
+    X(SYM)
 
-#define ENUMERATE_TAGGED_TYPES                                                                     \
-    ENUMERATE_HEAP_TYPES                                                                           \
-    X(INT)                                                                                         \
-    X(PROC)
+#define ENUMERATE_TAGGED_TYPES \
+    ENUMERATE_HEAP_TYPES       \
+    X(INT)
 
 #define STRING_BITS 0x7FFE000000000000
 #define MAP_BITS 0x7FFF000000000000
@@ -37,17 +38,24 @@ _Static_assert(sizeof(kokos_value_t) == sizeof(uintptr_t),
 #define VECTOR_BITS 0x7FFD000000000000
 #define INT_BITS 0xFFFE000000000000
 #define PROC_BITS 0xFFFF000000000000
+#define SYM_BITS 0xFFFD000000000000
 
+// NOTE: we can't generate these using X-macros, since you can't use the preprocessor inside the preprocessor
 #define STRING_TAG (STRING_BITS >> 48)
 #define MAP_TAG (MAP_BITS >> 48)
 #define LIST_TAG (LIST_BITS >> 48)
 #define VECTOR_TAG (VECTOR_BITS >> 48)
 #define INT_TAG (INT_BITS >> 48)
 #define PROC_TAG (PROC_BITS >> 48)
+#define SYM_TAG (SYM_BITS >> 48)
 
 #define TRUE_BITS (OBJ_BITS | 1)
 #define FALSE_BITS (OBJ_BITS | 2)
 #define NIL_BITS (OBJ_BITS | 4)
+
+#define KOKOS_TRUE (TO_VALUE(TRUE_BITS))
+#define KOKOS_FALSE (TO_VALUE(FALSE_BITS))
+#define KOKOS_NIL (TO_VALUE(NIL_BITS))
 
 #define IS_DOUBLE_INT(i) (((i) & OBJ_BITS) != OBJ_BITS)
 #define IS_DOUBLE(val) (IS_DOUBLE_INT((val).as_int))
@@ -68,12 +76,31 @@ _Static_assert(sizeof(kokos_value_t) == sizeof(uintptr_t),
 #define FROM_PTR(p) ((kokos_value_t) { .as_int = (uintptr_t)(p) })
 
 #define X(t)                                                                                       \
+    static inline kokos_value_t TO_##t##_INT(uintptr_t ptr) \
+    { \
+    return TO_VALUE(ptr | t##_BITS);\
+    } \
     static inline kokos_value_t TO_##t(void* ptr)                                                  \
     {                                                                                              \
-        return TO_VALUE((uint64_t)ptr | t##_BITS);                                                 \
+    return TO_##t##_INT((uintptr_t)ptr);\
     }
 
-ENUMERATE_HEAP_TYPES
+ENUMERATE_TAGGED_TYPES
+#undef X
+
+#define GET_TAG(i) ((i) >> 48)
+#define VALUE_TAG(val) (GET_TAG((val).as_int))
+
+/// This macro returns 0 if the value is double, and it's tag otherwise.
+#define CHECKED_VALUE_TAG(val) (IS_DOUBLE((val)) ? 0 : VALUE_TAG((val)))
+
+#define X(t)                                                                                       \
+    static inline bool IS_##t(kokos_value_t value)                                                 \
+    {                                                                                              \
+        return VALUE_TAG(value) == t##_TAG;                                                        \
+    }
+
+ENUMERATE_TAGGED_TYPES
 #undef X
 
 #define IS_NAN_DOUBLE(d) (TO_VALUE((d)).as_int == NAN_BITS)
@@ -82,9 +109,6 @@ ENUMERATE_HEAP_TYPES
 
 #define TO_INT(i) ((uint64_t)(i) | INT_BITS)
 #define GET_INT(val) ((int32_t)((val).as_int & ~INT_BITS))
-
-#define GET_TAG(i) ((i) >> 48)
-#define VALUE_TAG(val) (GET_TAG((val).as_int))
 
 #define GET_PTR_INT(i) ((i) & 0x0000FFFFFFFFFFFF)
 #define GET_PTR(v) ((void*)GET_PTR_INT((v).as_int))

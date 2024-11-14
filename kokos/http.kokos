@@ -1,0 +1,4 @@
+(print "sending get request to the server...")
+
+(let (resp (http-get "http://httppo:8080/info.txt"))
+    (print "got a response: " resp))

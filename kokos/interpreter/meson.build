@@ -12,14 +12,11 @@ interpreter_sources = [
   'src/main.c',
 ]
 
-curldep = dependency('libcurl')
-
 interpreterlibinc = [lexerinc, baseinc]
 interpreterlib = library('kokosinterpreter',
                          interpreterlib_sources,
                          include_directories : interpreterlibinc,
                          c_args: ['-DBASE_IMPLEMENTATION', '-DBASE_STATIC'],
-                         dependencies : curldep,
                          link_with : lexerlib)
 
 interpreterinc = include_directories('src')
