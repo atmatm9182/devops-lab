@@ -14,6 +14,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: setup
-      run: cd httppo && mkdir build
+      run: mkdir ./httppo/build
     - name: make
-      run: make
+      run: cd httppo && make
