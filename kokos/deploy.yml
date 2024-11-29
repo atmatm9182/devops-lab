@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kokos
+spec:
+  selector:
+    matchLabels:
+      app: kokos
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kokos
+    spec:
+      containers:
+        - name: kokos
+          image: kokos
+          volumeMounts:
+            - mountPath: /var/lib/kokos
+              name: kokos-storage
+      volumes:
+        - name: kokos-storage
+          persistentVolumeClaim:
+            claimName: kokos-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kokos-pv-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 15Gi
