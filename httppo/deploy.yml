@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httppo
+spec:
+  selector:
+    matchLabels:
+      app: httppo
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: httppo
+    spec:
+      containers:
+        - name: httppo
+          image: httppo
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: /var/lib/httppo
+              name: httppo-storage
+      volumes:
+        - name: httppo-storage
+          persistentVolumeClaim:
+            claimName: httppo-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: httppo-pv-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 15Gi
